@@ -55,7 +55,7 @@ Hands-on-AI-Infra/
 
 | 主题 | 说明 | 文档 |
 | --- | --- | --- |
-| 注意力机制 | Self/Cross/MHA/GQA/MQA、causal mask、复杂度分析 | 待补充 |
+| 注意力机制 | Self/Cross/MHA/GQA/MQA、causal mask、复杂度分析 | [注意力机制基本原理](神经网络基础/注意力机制基本原理.md) |
 | 归一化 | LayerNorm/RMSNorm、Pre-LN vs Post-LN、稳定性 | 待补充 |
 | 激活函数 | GELU/SwiGLU、门控结构、数值特性 | 待补充 |
 | 位置编码 | 绝对/相对位置、RoPE、长度外推 | 待补充 |
