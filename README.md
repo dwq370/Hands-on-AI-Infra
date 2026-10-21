@@ -58,6 +58,7 @@ Hands-on-AI-Infra/
 | 注意力机制 | Self/Cross/MHA/GQA/MQA、causal mask、复杂度分析 | [注意力机制基本原理](神经网络基础/注意力机制基本原理.md) |
 | 归一化 | LayerNorm/RMSNorm、Pre-LN vs Post-LN、稳定性 | [归一化基本原理](神经网络基础/归一化基本原理.md) |
 | 激活函数 | GELU/SwiGLU、门控结构、数值特性 | [激活函数基本原理](神经网络基础/激活函数基本原理.md) |
+| 损失函数与反向传播 | 交叉熵梯度、自动微分、LLM 损失（CE/z-loss/MoE aux/MTP/DPO） | [损失函数与反向传播基本原理](神经网络基础/损失函数与反向传播基本原理.md) |
 | 位置编码 | 绝对/相对位置、RoPE、长度外推 | 待补充 |
 | 前馈网络与 MoE 结构 | 标准 FFN 维度、单专家维度设计、稀疏化动机 | 待补充 |
 | 优化器 | SGD/Momentum/Adam/AdamW、优化器状态显存 4Ψ | [优化器基本原理](神经网络基础/优化器基本原理.md) |
