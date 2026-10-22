@@ -188,9 +188,7 @@ DeepSeek-V3 提出**无辅助损失的负载均衡策略** [5]：
 
 每个 expert 每次处理的最大 token 数：
 
-$$
-\text{capacity} = \frac{\text{batch\_size} \cdot \text{seq\_len} \cdot k}{E} \cdot \text{capacity\_factor}
-$$
+![容量因子公式](assets/moe-capacity-factor.png)
 
 - `capacity_factor > 1`：给负载波动留 buffer；
 - `capacity_factor = 1`：刚好平均分配；
@@ -450,15 +448,16 @@ flowchart LR
 
 ### 图片来源与许可声明
 
-本文所有图均为 **Mermaid 自绘**（flowchart / graph），GitHub 原生渲染：
+本文大部分图为 **Mermaid 自绘**（flowchart / graph），GitHub 原生渲染：
 
 | 图 | 类型 | 说明 |
 | --- | --- | --- |
 | MoE 层结构（第 2.1 节） | Mermaid flowchart | 自绘 |
 | Dense FFN vs MoE FFN（第 2.4 节） | Mermaid flowchart | 自绘 |
+| **容量因子公式（第 3.4 节）** | PNG（公式渲染图） | 由 CodeCogs LaTeX 在线渲染服务生成，公共 API，可自由使用 |
 | Capacity Factor 示意（第 3.4 节） | Mermaid flowchart | 自绘 |
 | All-to-All 路由（第 4.3 节） | Mermaid flowchart | 自绘 |
 | 混合并行示意（第 5.2 节） | Mermaid flowchart | 自绘 |
 | 知识网络位置（第 8 节） | Mermaid flowchart | 自绘 |
 
-> 注：MoE 的结构示意图为工程概念图，无需外部图源；所有数学公式、路由策略与实验结论均已给出可点击来源。
+> 注：容量因子公式因含 `\text{batch\_size}` 等带下划线的文本，GitHub 的 KaTeX 渲染器报错 `'_' allowed only in math mode`，故采用 CodeCogs 渲染的 PNG 图片替代（来源：<https://latex.codecogs.com/>）。
