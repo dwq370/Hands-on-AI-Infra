@@ -112,7 +112,7 @@ Hands-on-AI-Infra/
 
 | 主题 | 说明 | 文档 |
 | --- | --- | --- |
-| FlashAttention | IO 感知、分块计算、访存优化 | 待补充 |
+| FlashAttention | IO 感知、分块计算、访存优化 | [FlashAttention 基本原理](推理/Attention优化/FlashAttention基本原理.md) |
 | PagedAttention | KV Cache 分页、显存碎片治理 | [PagedAttention 基本原理](推理/Attention优化/PagedAttention基本原理.md) |
 | 稀疏与滑窗注意力 | 长上下文稀疏化、效率与精度权衡 | 待补充 |
 | KV Cache 管理 | 复用、驱逐、量化、前缀共享 | [KV Cache 基本原理](推理/Attention优化/KV%20Cache基本原理.md) |
