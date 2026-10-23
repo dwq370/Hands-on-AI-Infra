@@ -150,26 +150,53 @@ flowchart TB
 
 ### 2.4 IO 复杂度分析：FlashAttention 到底减少了什么
 
-#### 精确的 HBM 读写量对比
+#### GPU 多 SM 架构的前提
 
-标准 Attention 分三个 kernel，每个 kernel 的中间结果（**完整的 S 和 P 矩阵**）必须写入 HBM：
+GPU 有 **N 个 SM**（A100 有 108 个），每个 SM 有**独立的 SRAM（~192 KB）和寄存器**，所有 SM 共享一个 HBM。CUDA kernel 启动时发射很多 Thread Block，**每个 Thread Block 分配到一个 SM 上独立运行**，TB 之间不共享 SRAM、不做同步（除非显式的 grid-level sync）。
 
-| 步骤 | HBM 操作 | 元素数（按一次 Attention head 计） |
+单个 TB 的 SRAM 只有 ~192 KB——**装不下完整的 Q/K/V（S·d 量级）或 Attention 矩阵（S² 量级）**。所以无论标准 Attention 还是 FlashAttention，**每个 TB 都只搬运 tile 级别的数据**（不是全矩阵）。两者的区别在于**TB 集体写完的中间结果矩阵是否需要存入 HBM 让别的 TB 再读**。
+
+#### 标准 Attention：3 个 kernel 的集体 round-trip
+
+标准 Attention 分三个 kernel，每个 kernel 发射一批 TB。每个 TB 只搬运 tile 级数据计算自己负责的那部分输出，但**所有 TB 写完后 HBM 中就有了完整的 S 和 P 矩阵**，下一个 kernel 的所有 TB 又集体把它们读回来：
+
+| 步骤 | 每个 TB 做的事 | 所有 TB 集体导致的 HBM 变化 |
 | --- | --- | --- |
-| Kernel 1: MatMul S = Q·Kᵀ | 写 S 矩阵 | **S²** |
-| Kernel 2: Softmax P = softmax(S) | 读 S + 写 P | **2S²** |
-| Kernel 3: MatMul O = P·V | 读 P + 写 O | **S²** + S·d |
-| **前向总计** | | **~4S²** 次 S² round-trip |
-| **反向总计** | 再次读 S 或 P（计算梯度需要） | **+2S²** 次 S² round-trip |
+| Kernel 1: S = Q·Kᵀ | 加载 Q tile + K tile → SRAM → 计算 S tile → 写 S tile | **HBM 中出现完整 S 矩阵（S² 元素）** |
+| Kernel 2: P = softmax(S) | 加载 S 的一行（需要完整一行算 softmax）→ 计算 P 的一行 → 写 P 的一行 | **HBM 中出现完整 P 矩阵（S² 元素）** |
+| Kernel 3: O = P·V | 加载 P tile + V tile → 计算 O tile → 写 O tile | HBM 中出现完整 O 矩阵 |
 
-FlashAttention 把整个计算**融合为一个 kernel**，永远不把完整的 S 或 P 写入 HBM。它只在**块级别**搬运 Q/K/V/O：
+**前向总计**：3 次 kernel launch，HBM 中 S 和 P 各被集体写一遍 + 读一遍 = **4 次 S² 级别的集体 round-trip**。
 
-| FlashAttention 操作 | HBM 读写 | 说明 |
+**反向总计**：计算梯度需要再次读 S 或 P → **+2 次 S² round-trip**。
+
+#### FlashAttention：单一融合 kernel，TB 独立完成全 Attention
+
+FlashAttention 是**一个融合 kernel**。每个 TB 负责一组 Q 小块（B × d），在 TB 内部**循环遍历所有 K/V 块**完成完整 Attention 计算——**永远不把中间结果写入 HBM**：
+
+```mermaid
+flowchart LR
+    subgraph "FlashAttention 单个 Thread Block 的 SRAM 生命周期"
+        Q["Q 块 (B·d)<br/>加载 1 次<br/>常驻 SRAM"]
+        Loop["循环遍历所有 K/V 块:"]
+        K1["加载 K₁/V₁ → SRAM<br/>计算 QK₁ᵀ + Online Softmax<br/>累积"]
+        K2["加载 K₂/V₂ → SRAM<br/>(覆盖 K₁/V₁)<br/>继续累积"]
+        Kn["..."]
+        O["写 O 块 (B·d) → HBM<br/>（只写最终输出！）"]
+        Q --> Loop --> K1 --> K2 --> Kn --> O
+    end
+    style Q fill:#d4f5d4,stroke:#2e8b57
+    style K1 fill:#ffe4b5,stroke:#ffa500
+    style K2 fill:#ffe4b5,stroke:#ffa500
+    style O fill:#aaccff,stroke:#6666ff
+```
+
+| FlashAttention 操作 | 每个 TB 的 HBM 读写 | SRAM 峰值 |
 | --- | --- | --- |
-| 加载 Q 块 | 读 B·d | B = 分块大小（通常 64–128） |
-| 加载 K/V 块 | 读 2B·d | 分块加载到 SRAM |
-| 写 O 块 | 写 B·d | 只写最终输出块 |
-| **总计** | 4B·d / (B·B) · S·S = **4S²d/B** | 块越多，每个块的搬运越少 |
+| 加载 Q 块 | 读 B·d | 3Bd（Q + K + V 块） |
+| 循环加载 K/V 块 | 每轮读 2B·d | （固定，不随 S 增长） |
+| 写 O 块 | 写 B·d | — |
+| **总计** | 4B·d / (B·B) · S·S = **4S²d/B** | **O(B·d) ≈ O(d)，与 S 无关** |
 
 其中 $B \approx M / (4d)$（4 个块同存 SRAM），所以 FlashAttention 的 HBM 读写量为：
 
@@ -177,19 +204,15 @@ $$
 \text{FA HBM} \approx \frac{16 S^2 d^2}{M} \text{ 元素}
 $$
 
-#### 所以 FlashAttention 的 HBM 读写量**一定更少吗**？
+Online Softmax 的 $\tilde{m}$ 和 $\tilde{l}$ 两个标量存在**寄存器**里，不占 SRAM。
 
-**不是渐近复杂度的降低**——标准 Attention 和 FlashAttention 的 HBM 读写都**是 Θ(S²)**。FlashAttention 的优势体现在**两个根本不同的维度**：
+#### FlashAttention 消除 S² round-trip 的精确定义
 
-**维度 1：FlashAttention 消除了 S² HBM round-trip**
-
-标准 Attention 要把 **两个完整的 S² 矩阵（S 和 P）** 写入 HBM 再读回来——这是 **4–6 次 S² 的 HBM round-trip**。FlashAttention **根本不写这两个矩阵**——它只搬运 O(S·d) 量级的 Q/K/V/O 块。虽然块级别搬运的总字节数在极端情况下（head_dim 非常大）可能接近 S²，但**消除 S/P 矩阵本身就省掉了多次 round-trip 间的等待和 launch 开销**。
-
-**维度 2：FlashAttention 在 IO 分析模型下渐近最优**
-
-FlashAttention 论文 [1] 证明了：**任何精确 Attention 算法**（即输出完全等于 softmax(QKᵀ)V）的 HBM 读写量**必须是 Ω(S²)**——这是不可逾越的下界（至少要读 QKᵀ 输出 O）。FlashAttention 的 HBM 读写量已经接近这个下界的**常数因子倍**。
-
-> 标准 Attention 的 3 个 kernel 实现远离这个最优下界——它多了中间结果写入和多次 kernel launch 的开销。FlashAttention 的融合 kernel 把常数因子压到了接近最优。
+> **不是**"每个 TB 把 Q/K/V 从 HBM 一次性加载到 SRAM"（两者都做 tile 加载）。
+>
+> **而是**：标准 Attention 的每个 TB 只算自己的 tile，但所有 TB 集体写完后 HBM 中出现完整的 S 和 P 矩阵，下一个 kernel 的 TB 又集体把它们读回来——**这是跨 kernel 的 S² 级别的集体 round-trip**。
+>
+> FlashAttention 的每个 TB 在自己的 SRAM/寄存器中就能完成"完整 Attention 计算"（负责自己的 Q 块匹配所有 K/V 块），**永远不需要和其他 TB 交换中间结果**，也就不需要把 S/P 写入 HBM 让别的 TB 读——**消除了所有 S² 级别的跨 kernel round-trip**。
 
 #### 数值对比（A100, M=192 KB/SM）
 
