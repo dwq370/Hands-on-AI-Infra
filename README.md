@@ -41,6 +41,7 @@ Hands-on-AI-Infra/
 │   └── 训练优化/          # 激活重计算（梯度检查点）、显存与吞吐优化
 ├── 推理/
 │   ├── Attention优化/     # FlashAttention、PagedAttention、稀疏/滑窗、KV Cache 管理
+│   ├── 解码优化/          # 投机采样、并行解码、低延迟生成策略
 │   ├── 分布式推理/        # TP/PP/EP 推理、KV Cache 分布式、Prefill-Decode 分离
 │   ├── 编译优化/          # 图编译、算子融合、Kernel 自动调优、CUDAGraph/Inductor 等
 │   ├── 图优化/            # 计算图捕获与重写、常量折叠、算子调度、动态形状处理
@@ -116,6 +117,14 @@ Hands-on-AI-Infra/
 | PagedAttention | KV Cache 分页、显存碎片治理 | [PagedAttention 基本原理](推理/Attention优化/PagedAttention基本原理.md) |
 | 稀疏与滑窗注意力 | 长上下文稀疏化、效率与精度权衡 | [稀疏与滑窗注意力基本原理](推理/Attention优化/稀疏与滑窗注意力基本原理.md) |
 | KV Cache 管理 | 复用、驱逐、量化、前缀共享 | [KV Cache 基本原理](推理/Attention优化/KV%20Cache基本原理.md) |
+
+#### 解码优化
+
+| 主题 | 说明 | 文档 |
+| --- | --- | --- |
+| 投机采样 | 草稿-验证、解码加速、分布保持 | [投机采样基本原理](推理/解码优化/投机采样基本原理.md) |
+| 并行解码 | Jacobi 迭代、树状注意力、多 token 同时生成 | 待补充 |
+| 低延迟生成策略 | 延迟-吞吐权衡、首 token 优化 | 待补充 |
 
 #### 分布式推理
 
