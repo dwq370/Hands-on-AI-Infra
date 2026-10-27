@@ -143,7 +143,7 @@ flowchart TB
 | **持久化 KV 大幅下降** | SWA KV 不再落 SSD / host DRAM，持久化占用约为上一代的 1/8 [1] |
 | **prefill 计算减少** | decoder 只跑最后 $n_{win}$ 个 token，prefill 近乎减半 [1][5] |
 | **TTFT 降低** | vLLM 实测约 **30% TTFT 减少**（配合 CUDA Graph）[2] |
-| **前缀缓存友好** | 命中边界不再需要保存每层 SWA KV，缓存复杂度从 $O(L \cdot W \cdot \text{num\_hit\_boundaries})$ 骤降 |
+| **前缀缓存友好** | 命中边界不再需要保存每层 SWA KV，缓存复杂度从 $O(L \cdot W \cdot \mathrm{numHitBoundaries})$ 骤降 |
 | **质量损失可忽略** | DeepSeek 报告近似重放性能退化可忽略 [1] |
 
 ### 4.2 缺点与代价
@@ -204,7 +204,7 @@ vLLM 实现 `--[no-]swa-bounded-replay`（DeepSeek-V4.1 默认开启），配合
 
 | 维度 | 全量持久化 | 精确重算 | SWA 有界重放 |
 | --- | --- | --- | --- |
-| 存储开销 | $O(L \cdot W \cdot \text{num\_hit\_boundaries})$，占持久化缓存近半 | 无存储 | **无存储** |
+| 存储开销 | $O(L \cdot W \cdot \mathrm{numHitBoundaries})$，占持久化缓存近半 | 无存储 | **无存储** |
 | 重建计算 | 无 | $L \times W$ 个 token（5120） | **$W$ 个 token（128）** |
 | 精确性 | bit-exact | bit-exact | 近似（损失可忽略） |
 | 适用性 | 存储充足、会话短 | 层数少、窗口小 | **CED 长上下文、前缀复用密集** |
