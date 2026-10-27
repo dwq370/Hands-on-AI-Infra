@@ -117,6 +117,7 @@ Hands-on-AI-Infra/
 | PagedAttention | KV Cache 分页、显存碎片治理 | [PagedAttention 基本原理](推理/Attention优化/PagedAttention基本原理.md) |
 | 稀疏与滑窗注意力 | 长上下文稀疏化、效率与精度权衡 | [稀疏与滑窗注意力基本原理](推理/Attention优化/稀疏与滑窗注意力基本原理.md) |
 | SWA 有界重放 | SWA KV 不持久化、按需重放重建、存储 1/8 | [SWA有界重放基本原理](推理/Attention优化/SWA有界重放基本原理.md) |
+| 压缩稀疏注意力 | 压缩+索引+稀疏读取、跨层复用、全局 KV 890B/token | [压缩稀疏注意力基本原理](推理/Attention优化/压缩稀疏注意力基本原理.md) |
 | KV Cache 管理 | 复用、驱逐、量化、前缀共享 | [KV Cache 基本原理](推理/Attention优化/KV%20Cache基本原理.md) |
 
 #### 解码优化
