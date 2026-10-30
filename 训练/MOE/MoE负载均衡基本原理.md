@@ -106,7 +106,7 @@ $$
 其中
 
 $$
-f_i = \frac{1}{T}\sum_{x \in \mathcal{B}} \mathbf{1}\left\{\arg\max_j p_j(x) = i\right\}, \qquad
+f_i = \frac{1}{T}\sum_{x \in \mathcal{B}} \mathbf{1}\left[\arg\max_j p_j(x) = i\right], \qquad
 P_i = \frac{1}{T}\sum_{x \in \mathcal{B}} p_i(x)
 $$
 
@@ -289,8 +289,8 @@ flowchart TB
 
 | 实验 | 自变量 | 观测量 | 目的 |
 | --- | --- | --- | --- |
-| 容量扫描 | $c_f \in \{1.0, 1.25, 1.5, 2.0\}$ | 丢弃率、填充率、步时间 | 找到溢出与浪费的拐点 |
-| 辅助损失扫描 | $\alpha \in \{0, 10^{-4}, 10^{-3}, 10^{-2}\}$ | MaxVio、验证损失 | 复现均衡—性能两难 |
+| 容量扫描 | $c_f \in \lbrace 1.0, 1.25, 1.5, 2.0 \rbrace$ | 丢弃率、填充率、步时间 | 找到溢出与浪费的拐点 |
+| 辅助损失扫描 | $\alpha \in \lbrace 0, 10^{-4}, 10^{-3}, 10^{-2} \rbrace$ | MaxVio、验证损失 | 复现均衡—性能两难 |
 | 偏置消融 | 偏置开/关、 $\gamma$ 扫描 | MaxVio 曲线、损失 | 确认无梯度均衡的收益与振荡边界 |
 | 统计口径消融 | 批级 vs 序列级损失 | 批内 MaxVio、单序列 MaxVio | 识别"批级均衡、序列内集中" |
 | 放置对照 | 顺序放置 vs 负载感知放置 | 设备慢化比、all-to-all 时长 | 量化系统层收益 |
