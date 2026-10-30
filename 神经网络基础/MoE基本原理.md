@@ -240,7 +240,7 @@ flowchart TB
 
 ```mermaid
 flowchart TB
-    subgraph "All-to-All 路由""
+    subgraph A2A["All-to-All 路由"]
         direction LR
         G0["GPU 0<br/>token A→E1, token B→E2"] --> DISP["分发"]
         G1["GPU 1<br/>token C→E1, token D→E3"] --> DISP
